@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "novarota-lakehouse"
+version = "1.0.0"
+description = "Data product transacional (Medallion/Delta Lake) da Cooperativa NovaRota"
+requires-python = ">=3.10"
+dependencies = [
+    "pyspark==3.5.1",
+    "delta-spark==3.2.0",
+    "PyYAML==6.0.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==8.2.0", "ruff==0.5.5"]
+
+[project.scripts]
+novarota-pipeline = "novarota.jobs.pipeline:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+ignore = ["E501"]

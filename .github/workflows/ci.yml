@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  lint-e-testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Java 17 (requerido pelo Spark)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Lint (ruff)
+        run: ruff check src tests conftest.py
+
+      - name: Cache de pacotes Ivy (jars Delta)
+        uses: actions/cache@v4
+        with:
+          path: ~/.ivy2
+          key: ivy-${{ runner.os }}-delta-3.2.0
+
+      - name: Testes (pytest)
+        run: pytest -q
