@@ -1,0 +1,46 @@
+name: Databricks Pipeline
+
+# A cada push na main (ou disparo manual), publica o Asset Bundle no Databricks
+# e executa o Job do pipeline Medallion (Bronze -> Prata -> Ouro -> SQL).
+#
+# Pre-requisito: cadastrar em Settings -> Secrets and variables -> Actions:
+#   - DATABRICKS_HOST   (ex.: https://dbc-xxxx.cloud.databricks.com)
+#   - DATABRICKS_TOKEN  (Personal Access Token do workspace)
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: databricks-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-e-run:
+    name: Deploy + execucao no Databricks
+    runs-on: ubuntu-latest
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar segredos do Databricks
+        run: |
+          if [ -z "$DATABRICKS_HOST" ] || [ -z "$DATABRICKS_TOKEN" ]; then
+            echo "::error::Defina os segredos DATABRICKS_HOST e DATABRICKS_TOKEN no repositorio."
+            exit 1
+          fi
+
+      - name: Instalar Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Validar bundle
+        run: databricks bundle validate -t prod
+
+      - name: Deploy do bundle
+        run: databricks bundle deploy -t prod
+
+      - name: Executar o Job do pipeline
+        run: databricks bundle run novarota_pipeline_medallion -t prod
