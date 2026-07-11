@@ -1,4 +1,5 @@
 -- =====================================================================
+-- FIRST_VALUE / LAST_VALUE: identifica o primeiro e o ultimo
 -- estabelecimento em que cada cliente transacionou, alem do valor da
 -- primeira e da ultima transacao (ordenadas por data).
 -- =====================================================================

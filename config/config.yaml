@@ -7,6 +7,11 @@ schema_bronze: bronze
 schema_prata: prata
 schema_ouro: ouro
 
+# Qualifica as tabelas com o catalogo (catalogo.schema.tabela) no Unity Catalog.
+# Local (metastore Spark) nao suporta 3 niveis, entao o padrao e false.
+# No Databricks o notebook liga isso automaticamente (config.usar_catalogo=True).
+usar_catalogo: false
+
 # Caminhos relativos a raiz do projeto (ajustar para volumes/DBFS em Databricks).
 dir_dados: data
 dir_landing: data/landing

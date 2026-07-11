@@ -1,6 +1,6 @@
 -- =====================================================================
-
--- meses consecutivos "variacao absoluta e percentual do valor liquido".
+-- LAG / LEAD: comparacao do comportamento transacional do cliente entre
+-- meses consecutivos (variacao absoluta e percentual do valor liquido).
 -- =====================================================================
 
 WITH base AS (

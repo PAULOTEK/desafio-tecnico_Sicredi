@@ -1,0 +1,61 @@
+# Databricks Asset Bundle (DAB) — define o Job que roda o pipeline no Databricks.
+#
+# O deploy/run e feito pelo GitHub Actions (.github/workflows/databricks.yml) a
+# cada push na branch main. As credenciais vem das variaveis de ambiente
+# DATABRICKS_HOST e DATABRICKS_TOKEN (segredos do repositorio no GitHub).
+#
+# Uso local (opcional):
+#   databricks bundle validate -t prod
+#   databricks bundle deploy   -t prod
+#   databricks bundle run novarota_pipeline_medallion -t prod
+
+bundle:
+  name: novarota-lakehouse
+
+targets:
+  prod:
+    default: true
+
+resources:
+  jobs:
+    novarota_pipeline_medallion:
+      name: "[NovaRota] Pipeline Medallion (Bronze->Prata->Ouro)"
+      # Sem cluster declarado => tasks rodam em compute Serverless (quando habilitado).
+      # Uma task por camada, encadeadas por depends_on:
+      #   setup -> bronze -> prata -> ouro -> analytics
+      # O parametro bundle_root aponta a raiz dos arquivos do bundle no workspace;
+      # cada notebook adiciona "{bundle_root}/src" ao sys.path p/ importar novarota.
+      tasks:
+        - task_key: setup_e_massa
+          notebook_task:
+            notebook_path: ./notebooks/00_setup_e_massa.py
+            base_parameters:
+              bundle_root: ${workspace.file_path}
+        - task_key: bronze
+          depends_on:
+            - task_key: setup_e_massa
+          notebook_task:
+            notebook_path: ./notebooks/01_bronze.py
+            base_parameters:
+              bundle_root: ${workspace.file_path}
+        - task_key: prata
+          depends_on:
+            - task_key: bronze
+          notebook_task:
+            notebook_path: ./notebooks/02_prata.py
+            base_parameters:
+              bundle_root: ${workspace.file_path}
+        - task_key: ouro
+          depends_on:
+            - task_key: prata
+          notebook_task:
+            notebook_path: ./notebooks/03_ouro.py
+            base_parameters:
+              bundle_root: ${workspace.file_path}
+        - task_key: analytics_sql
+          depends_on:
+            - task_key: ouro
+          notebook_task:
+            notebook_path: ./notebooks/04_analytics_sql.py
+            base_parameters:
+              bundle_root: ${workspace.file_path}
