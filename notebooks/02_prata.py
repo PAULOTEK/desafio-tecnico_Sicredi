@@ -1,10 +1,7 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # 02 · Camada Prata
+# MAGIC # Silver
 # MAGIC
-# MAGIC Limpeza/tipagem, **regras de qualidade + quarentena** e **SCD Tipo 2**
-# MAGIC (clientes/contas/cartões) com **MERGE** idempotente. Pré-requisito: `01_bronze`.
-
 # COMMAND ----------
 
 import sys

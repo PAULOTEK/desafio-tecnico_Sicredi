@@ -1,10 +1,5 @@
 -- =====================================================================
--- ROW_NUMBER: selecao do registro vigente por cliente a partir do
--- historico SCD2 (deduplicacao/versionamento).
---
--- Recupera a versao mais recente de cada cliente ordenando as versoes
--- por data de inicio de vigencia. Equivale a filtrar flag_vigente = true,
--- mas demonstra explicitamente o padrao de versionamento com ROW_NUMBER.
+
 -- =====================================================================
 
 WITH versoes AS (

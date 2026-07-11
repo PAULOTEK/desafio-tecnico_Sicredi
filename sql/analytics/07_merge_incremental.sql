@@ -1,11 +1,4 @@
 -- =====================================================================
--- MERGE INTO (SQL): atualizacao incremental idempotente de um snapshot
--- de cartoes vigentes.
---
--- Mantem a tabela ouro.gold_snapshot_cartao com a versao corrente de cada
--- cartao. Reexecutar o MERGE nao duplica linhas (idempotente): cartoes ja
--- existentes sao atualizados e novos sao inseridos. O mesmo padrao e usado
--- no pipeline PySpark (ver src/novarota/transformacao/scd2.py).
 -- =====================================================================
 
 -- Tabela alvo (criada uma unica vez).

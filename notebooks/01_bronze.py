@@ -1,10 +1,8 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # 01 · Camada Bronze
+# MAGIC # Bronze
 # MAGIC
-# MAGIC Ingestão **incremental** e **idempotente** dos arquivos de `landing` para
-# MAGIC tabelas Delta gerenciadas, preservando o dado bruto (+ `mergeSchema`) e
-# MAGIC adicionando metadados técnicos. Pré-requisito: rodar `00_setup_e_massa`.
+
 
 # COMMAND ----------
 

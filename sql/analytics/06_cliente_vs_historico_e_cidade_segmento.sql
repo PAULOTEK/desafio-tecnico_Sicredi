@@ -1,12 +1,5 @@
 -- =====================================================================
--- Comparacao do cliente contra o proprio historico E contra o seu grupo
--- (cidade + segmento) no mesmo mes.
---
--- Para cada cliente/mes calcula:
---   * media movel do proprio cliente ate o mes (historico);
---   * media do grupo cidade+segmento no mes (benchmark de pares);
---   * desvio relativo do cliente frente ao grupo.
--- Usa CTEs encadeadas e funcoes de janela.
+
 -- =====================================================================
 
 WITH base AS (

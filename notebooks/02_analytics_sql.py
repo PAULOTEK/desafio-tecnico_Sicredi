@@ -1,10 +1,8 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Consultas SQL avançadas — NovaRota
+# MAGIC # Consultas SQL — NovaRota
 # MAGIC
-# MAGIC Demonstra as consultas exigidas (CTEs, ROW_NUMBER, LAG/LEAD,
-# MAGIC FIRST/LAST_VALUE, NTILE/PERCENT_RANK, anomalias e MERGE). Os arquivos-fonte
-# MAGIC estão em `sql/analytics/` e podem ser executados diretamente no editor SQL
+
 # MAGIC do Databricks.
 
 # COMMAND ----------

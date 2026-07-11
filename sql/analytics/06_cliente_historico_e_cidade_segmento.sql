@@ -1,9 +1,5 @@
 -- =====================================================================
 
--- Para cada cliente/mes calcula:
---   #  movel do proprio cliente ate o mes (historico);
---   # grupo cidade+segmento no mes (benchmark de pares);
---   # desvio relativo do cliente frente ao grupo.
 -- =====================================================================
 
 WITH base AS (

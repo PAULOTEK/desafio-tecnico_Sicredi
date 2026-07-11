@@ -1,6 +1,4 @@
 -- =====================================================================
--- transacionado no periodo. Divide a base em quartis e calcula
--- o ranking percentual (PERCENT_RANK) de cada cliente.
 -- =====================================================================
 
 WITH gasto_cliente AS (

@@ -1,7 +1,4 @@
 -- =====================================================================
--- NTILE / PERCENT_RANK: segmentacao de clientes por valor liquido
--- transacionado no periodo. Divide a base em quartis (NTILE 4) e calcula
--- o ranking percentual (PERCENT_RANK) de cada cliente.
 -- =====================================================================
 
 WITH gasto_cliente AS (

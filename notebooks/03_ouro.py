@@ -1,11 +1,8 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # 03 · Camada Ouro
+# MAGIC # Gold
 # MAGIC
-# MAGIC Constrói o fato `gold_fato_transacao` (junção de tudo com o cadastro vigente
-# MAGIC na data — SCD2 — estornos e eventos), as dimensões e as visões analíticas
-# MAGIC (`gold_cliente_mes`, `gold_indicadores_risco`, `gold_features_cliente`).
-# MAGIC Pré-requisito: `02_prata`.
+
 
 # COMMAND ----------
 

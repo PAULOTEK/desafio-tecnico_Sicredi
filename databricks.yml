@@ -1,9 +1,4 @@
 # Databricks Asset Bundle (DAB) — define o Job que roda o pipeline no Databricks.
-#
-# O deploy/run e feito pelo GitHub Actions (.github/workflows/databricks.yml) a
-# cada push na branch main. As credenciais vem das variaveis de ambiente
-# DATABRICKS_HOST e DATABRICKS_TOKEN (segredos do repositorio no GitHub).
-#
 # Uso local (opcional):
 #   databricks bundle validate -t prod
 #   databricks bundle deploy   -t prod

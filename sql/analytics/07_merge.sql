@@ -1,8 +1,5 @@
 -- =====================================================================
---
--- Mantem a tabela ouro.gold_snapshot_cartao com a versao corrente de cada
--- cartao. Reexecutar o MERGE nao duplica linhas (idempotente): cartoes ja
--- existentes sao atualizados e novos sao inseridos. O mesmo padrao e usado
+
 -- =====================================================================
 
 -- Tabela alvo (criada uma unica vez).
