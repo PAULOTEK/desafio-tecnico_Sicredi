@@ -1,9 +1,20 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Consultas SQL — NovaRota
+# MAGIC # 04 · Consultas SQL avançadas — NovaRota
 # MAGIC
-
+# MAGIC Demonstra as consultas exigidas (CTEs, ROW_NUMBER, LAG/LEAD,
+# MAGIC FIRST/LAST_VALUE, NTILE/PERCENT_RANK, anomalias e MERGE). Os arquivos-fonte
+# MAGIC estão em `sql/analytics/` e podem ser executados diretamente no editor SQL
 # MAGIC do Databricks.
+
+# COMMAND ----------
+
+# No Databricks (Unity Catalog) seleciona o catalogo para resolver schema.tabela.
+try:
+    dbutils.widgets.text("bundle_root", "")  # noqa: F821
+    spark.sql("USE CATALOG novarota")  # noqa: F821
+except Exception:  # noqa: BLE001
+    pass
 
 # COMMAND ----------
 

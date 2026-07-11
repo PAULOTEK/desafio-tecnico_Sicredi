@@ -1,6 +1,5 @@
 -- =====================================================================
--- estabelecimento em que cada cliente transacionou, alem do valor da
--- primeira e da ultima transacao (ordenadas por data).
+
 -- =====================================================================
 
 WITH transacoes AS (

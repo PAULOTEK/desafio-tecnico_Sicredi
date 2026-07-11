@@ -1,8 +1,5 @@
 -- =====================================================================
--- Marca como anomala a transacao cujo valor supera a media do cliente
--- em mais de 3 desvios-padrao (z-score), ou que ocorre em cartao
--- cancelado, ou que possui evento de fraude/chargeback associado.
--- Usa CTEs encadeadas e funcoes de janela para o calculo estatistico.
+
 -- =====================================================================
 
 WITH stats_cliente AS (
