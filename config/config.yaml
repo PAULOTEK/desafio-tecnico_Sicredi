@@ -1,0 +1,16 @@
+# Configuracao do pipeline NovaRota.
+# Valores podem ser sobrescritos por variaveis de ambiente NOVAROTA_* ou por
+# argumentos de linha de comando dos jobs (--modo, --data-referencia, etc.).
+
+catalogo: novarota
+schema_bronze: bronze
+schema_prata: prata
+schema_ouro: ouro
+
+# Caminhos relativos a raiz do projeto (ajustar para volumes/DBFS em Databricks).
+dir_dados: data
+dir_landing: data/landing
+dir_lakehouse: data/lakehouse
+dir_warehouse: data/spark-warehouse
+
+modo_execucao: full  # full | incremental
