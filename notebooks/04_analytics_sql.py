@@ -9,12 +9,8 @@
 
 # COMMAND ----------
 
-# No Databricks (Unity Catalog) seleciona o catalogo para resolver schema.tabela.
-try:
-    dbutils.widgets.text("bundle_root", "")  # noqa: F821
-    spark.sql("USE CATALOG novarota")  # noqa: F821
-except Exception:  # noqa: BLE001
-    pass
+# Unity Catalog: seleciona o catalogo para resolver schema.tabela nas consultas.
+spark.sql("USE CATALOG novarota")
 
 # COMMAND ----------
 

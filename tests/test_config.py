@@ -6,7 +6,7 @@ from datetime import date
 
 import pytest
 
-from novarota.config import Config
+from src.config import Config
 
 
 def test_valores_padrao():

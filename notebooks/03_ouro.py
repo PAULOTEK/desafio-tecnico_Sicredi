@@ -22,42 +22,26 @@ except Exception:  # noqa: BLE001
     _raiz = ""
 
 if not _raiz:
-    try:
-        _ctx = dbutils.notebook.entry_point.getDbutils().notebook().getContext()  # noqa: F821
-        _nb = _ctx.notebookPath().get()
-        _raiz = "/Workspace" + _nb.rsplit("/notebooks/", 1)[0]
-    except Exception:  # noqa: BLE001
-        _raiz = ""
+    _ctx = dbutils.notebook.entry_point.getDbutils().notebook().getContext()  # noqa: F821
+    _nb = _ctx.notebookPath().get()
+    _raiz = "/Workspace" + _nb.rsplit("/notebooks/", 1)[0]
 
-if _raiz and f"{_raiz}/src" not in sys.path:
+if f"{_raiz}/src" not in sys.path:
     sys.path.insert(0, f"{_raiz}/src")
 
 # COMMAND ----------
 
 from pyspark.sql import functions as F
 
-from novarota.common.ambiente import preparar_unity_catalog
-from novarota.common.spark import obter_spark
-from novarota.config import Config
-from novarota.transformacao.ouro import construir_fato_transacao, executar_ouro
-
-try:
-    display  # noqa: F821
-except NameError:
-    def display(df, n: int = 20):
-        df.show(n, truncate=False)
+from src.common.ambiente import preparar_unity_catalog
+from src.config import Config
+from src.transformacao.ouro import construir_fato_transacao, executar_ouro
 
 # COMMAND ----------
 
 config = Config.carregar()
 config.modo_execucao = "full"
-spark = obter_spark("novarota-ouro", config)
-
-try:
-    dbutils  # noqa: F821
-    preparar_unity_catalog(spark, config)
-except NameError:
-    pass
+preparar_unity_catalog(spark, config)
 
 # COMMAND ----------
 

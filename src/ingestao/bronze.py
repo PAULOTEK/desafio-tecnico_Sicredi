@@ -1,7 +1,19 @@
 """Camada Bronze: ingestao incremental de arquivos para Delta Lake.
 
-Preserva os dados brutos exatamente como chegam e adiciona metadados
+Preserva os dados brutos exatamente como chegam (inclusive campos inesperados
+em caso de evolucao de schema, gracas ao ``mergeSchema``) e adiciona metadados
 tecnicos de auditoria.
+
+Estrategia de incremental sem Auto Loader
+-----------------------------------------
+Mantemos uma tabela de controle (``bronze._controle_ingestao``) com o caminho
+de cada arquivo ja processado. A cada execucao, apenas arquivos ainda nao
+registrados sao lidos. Isso torna a ingestao **idempotente**: reprocessar a
+mesma carga nao duplica dados, pois os arquivos ja constam no controle.
+
+Em producao no Databricks usariamos **Auto Loader** (``cloudFiles``), que
+resolve deteccao incremental, checkpoint e evolucao de schema de forma
+gerenciada e escalavel (ver docs/decisoes-tecnicas.md).
 """
 
 from __future__ import annotations
@@ -35,9 +47,9 @@ _SCHEMA_CONTROLE = StructType(
 class FonteBronze:
     """Descreve uma fonte de dados a ser ingerida na Bronze."""
 
-    nome: str
-    formato: str
-    subpasta: str
+    nome: str  # nome logico e tabela destino (ex.: "clientes")
+    formato: str  # "json" ou "csv"
+    subpasta: str  # subpasta em landing (ex.: "clientes")
     schema_version: str = "v1"
 
 
@@ -52,7 +64,7 @@ FONTES_PADRAO: list[FonteBronze] = [
 
 
 def _garantir_schema(spark: SparkSession, config: Config) -> None:
-    spark.sql(f"CREATE DATABASE IF NOT EXISTS {config.schema_bronze}")
+    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {config.schema_qualificado(config.schema_bronze)}")
 
 
 def _tabela_controle(config: Config) -> str:
@@ -61,15 +73,18 @@ def _tabela_controle(config: Config) -> str:
 
 def _arquivos_ja_ingeridos(spark: SparkSession, config: Config, fonte: str) -> set[str]:
     tabela = _tabela_controle(config)
-    if not spark.catalog.tableExists(tabela):
+    # Use SQL-based check for Serverless compatibility (tableExists() not whitelisted)
+    try:
+        linhas = (
+            spark.table(tabela)
+            .where(F.col("fonte") == fonte)
+            .select("arquivo_origem")
+            .collect()
+        )
+        return {linha["arquivo_origem"] for linha in linhas}
+    except Exception:
+        # Table doesn't exist yet
         return set()
-    linhas = (
-        spark.table(tabela)
-        .where(F.col("fonte") == fonte)
-        .select("arquivo_origem")
-        .collect()
-    )
-    return {linha["arquivo_origem"] for linha in linhas}
 
 
 def _listar_arquivos(config: Config, fonte: FonteBronze) -> list[Path]:
@@ -83,11 +98,11 @@ def _listar_arquivos(config: Config, fonte: FonteBronze) -> list[Path]:
 def _para_uri(caminho: Path) -> str:
     """Converte o caminho local para file URI, alinhado ao input_file_name."""
 
-    return caminho.resolve().as_uri()
+    return str(caminho)
 
 
 def _ler_arquivos(spark: SparkSession, fonte: FonteBronze, arquivos: list[Path]) -> DataFrame:
-    caminhos = [str(p.resolve()) for p in arquivos]
+    caminhos = [str(p) for p in arquivos]
     if fonte.formato == "json":
         return spark.read.json(caminhos)
     if fonte.formato == "csv":

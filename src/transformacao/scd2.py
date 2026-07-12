@@ -132,12 +132,15 @@ def materializar_scd2(
 ) -> None:
     """Materializa o historico via MERGE INTO por surrogate key (idempotente)."""
 
-    if not spark.catalog.tableExists(tabela):
+    # Evita spark.catalog.tableExists() (nao suportado no Serverless): tenta abrir
+    # a tabela Delta; se nao existir, cria na primeira carga.
+    try:
+        alvo = DeltaTable.forName(spark, tabela)
+    except Exception:  # noqa: BLE001 - tabela ainda nao existe
         logger.info("scd2 criando_tabela=%s", tabela)
         df_historico.write.format("delta").mode("overwrite").saveAsTable(tabela)
         return
 
-    alvo = DeltaTable.forName(spark, tabela)
     (
         alvo.alias("destino")
         .merge(df_historico.alias("origem"), "destino.sk = origem.sk")

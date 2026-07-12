@@ -1,79 +1,19 @@
 # Como rodar o pipeline
 
-Guia ponta a ponta para executar o data product NovaRota em **dois ambientes**:
+Guia ponta a ponta para executar o data product NovaRota no **Databricks
+Serverless + Unity Catalog** — o ambiente-alvo do projeto.
 
-1. [Execução local](#1-execucao-local) (PySpark + Delta Lake na sua máquina);
-2. [Databricks Serverless + Unity Catalog](#2-databricks-serverless--unity-catalog);
-3. [Execução automática via CI/CD](#3-cicd-execucao-automatica-no-databricks).
+1. [Databricks Serverless + Unity Catalog](#1-databricks-serverless--unity-catalog);
+2. [Execução automática via CI/CD](#2-cicd-execucao-automatica-no-databricks);
+3. [Desenvolvimento e testes](#3-desenvolvimento-e-testes).
 
-O **mesmo código** roda nos dois lugares — só mudam a sessão Spark (nativa no
-Databricks) e a qualificação dos nomes de tabela (2 níveis local, 3 níveis no
-Unity Catalog). Nenhuma regra de negócio muda.
-
----
-
-## 1. Execução local
-
-### Pré-requisitos
-- **Python 3.10+**
-- **Java 17** (exigido pelo Spark) — confira com `java -version`.
-- Internet na 1ª execução (o Spark baixa os JARs do Delta via Maven; depois usa
-  o cache `~/.ivy2`).
-
-### Setup
-```bash
-python3 -m venv .venv
-source .venv/bin/activate            # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-pip install -e .
-```
-
-### Rodar tudo de uma vez (gera a massa sintética + Bronze → Prata → Ouro)
-```bash
-python -m novarota.jobs.pipeline --gerar-dados --modo full
-```
-
-### Rodar camada por camada (útil para depurar/agendar)
-```bash
-python -m novarota.jobs.gerar_dados_job          # gera a massa em data/landing
-python -m novarota.jobs.bronze_job --modo full   # ingestão Bronze (Delta)
-python -m novarota.jobs.prata_job                # limpeza, qualidade, SCD2
-python -m novarota.jobs.ouro_job                 # fato, dimensões, features
-python -m novarota.jobs.analytics_job            # executa os SQL de sql/analytics
-```
-
-### Parâmetros (sobrescrevem `config/config.yaml`)
-| Parâmetro | Descrição |
-|---|---|
-| `--config` | Caminho de um YAML alternativo |
-| `--modo` | `full` ou `incremental` |
-| `--data-referencia` | Data de referência (`YYYY-MM-DD`) |
-| `--batch-id` | Identificador do batch |
-
-Também dá para parametrizar por ambiente (prefixo `NOVAROTA_`):
-```bash
-export NOVAROTA_MODO_EXECUCAO=incremental
-export NOVAROTA_DATA_REFERENCIA=2024-03-01
-```
-
-### Testes e lint
-```bash
-pytest -q                                  # 19 testes (unitários + transformação)
-ruff check src tests conftest.py           # lint
-```
-
-### O que esperar (evidências)
-- `gold_fato_transacao` = **10** linhas;
-- clientes/contas/cartões com **múltiplas versões** (SCD2);
-- estorno **total** (T0003) → `valor_liquido = 0`; estorno **parcial** (T0021)
-  → `valor_liquido = 2800`; cartão **cancelado** (T0022) fora das métricas
-  mensais, mas preservado no fato;
-- **idempotência**: rodar de novo sem novos arquivos loga `nada_novo` e o fato
-  continua com 10 linhas.
+O código de negócio vive no pacote `src/novarota` (modular e testável); os
+notebooks são a **camada de execução/demonstração** e usam o `spark` nativo do
+Databricks.
 
 ---
 
-## 2. Databricks Serverless + Unity Catalog
+## 1. Databricks Serverless + Unity Catalog
 
 > Serve em workspace corporativo, trial ou **Free Edition**. Não é preciso
 > instalar Spark/Delta — já vêm no runtime.
@@ -88,10 +28,10 @@ Delta nativos).
 
 ### Passo 3 — Executar o pipeline (um notebook por camada, na ordem)
 Há **um notebook por camada** — rode-os na sequência abaixo. Cada um localiza o
-pacote `novarota` (adiciona `src` ao `sys.path`, **sem** `%pip`) e, ao detectar o
-Databricks, prepara o Unity Catalog (liga `usar_catalogo`, cria
-catálogo/schemas/Volume `landing`, faz `USE CATALOG` e aponta o *landing* para o
-Volume) via `novarota.common.ambiente.preparar_unity_catalog`.
+pacote `novarota` (adiciona `src` ao `sys.path`, **sem** `%pip`) e prepara o
+Unity Catalog (liga `usar_catalogo`, cria catálogo/schemas/Volume `landing`, faz
+`USE CATALOG` e aponta o *landing* para /*o Volume) via
+`novarota.common.ambiente.preparar_unity_catalog`.
 
 | Ordem | Notebook | O que faz |
 |---|---|---|
@@ -106,18 +46,18 @@ Volume) via `novarota.common.ambiente.preparar_unity_catalog`.
 
 ### Passo 4 — Validar (prints = evidência de execução)
 ```sql
-SELECT count(*) FROM novarota.ouro.gold_fato_transacao;                 -- 10
-SELECT id_cliente, count(*) FROM novarota.prata.clientes GROUP BY 1;    -- versões SCD2
+SELECT count(*) FROM novarota.ouro.gold_fato_transacao;                 
+SELECT id_cliente, count(*) FROM novarota.prata.clientes GROUP BY 1;    
 SELECT id_transacao, valor, valor_liquido, flag_cartao_cancelado
-FROM   novarota.ouro.gold_fato_transacao ORDER BY id_transacao;         -- T0003=0, T0021=2800, T0022 cancelado
+FROM   novarota.ouro.gold_fato_transacao ORDER BY id_transacao;         
 ```
 
 ### Por que funciona no Serverless (decisões de compatibilidade)
 | Tema | Decisão |
 |---|---|
-| Sessão Spark | Usa o `spark` **nativo** do notebook (`obter_spark` reaproveita a sessão ativa). **Nunca** `criar_spark`/`sparkContext` — proibidos no Serverless (Spark Connect). |
+| Sessão Spark | Usa o `spark` **nativo** do notebook. **Nunca** cria sessão manual nem acessa `sparkContext`/`_jvm` — proibidos no Serverless (Spark Connect). |
 | Armazenamento | Tabelas **gerenciadas** pelo Unity Catalog (`saveAsTable`). Sem *external location*; o único Volume é o `landing`, só para os arquivos de entrada. |
-| Nomes de tabela | Flag `usar_catalogo`: `novarota.schema.tabela` no Databricks; `schema.tabela` local (metastore local não tem catálogo de 3 níveis). |
+| Nomes de tabela | Flag `usar_catalogo` (ligada por `preparar_unity_catalog`) qualifica as tabelas como `novarota.schema.tabela`. |
 | `arquivo_origem` | Coluna oculta `_metadata.file_path` (o `input_file_name()` não é suportado no Spark Connect/Serverless). |
 | Existência de tabela | `try/except DeltaTable.forName` no lugar de `spark.catalog.tableExists()` (não é permitido no Serverless). |
 
@@ -128,12 +68,21 @@ CREATE CATALOG IF NOT EXISTS novarota;
 CREATE SCHEMA  IF NOT EXISTS novarota.bronze;
 CREATE SCHEMA  IF NOT EXISTS novarota.prata;
 CREATE SCHEMA  IF NOT EXISTS novarota.ouro;
-CREATE VOLUME  IF NOT EXISTS novarota.bronze.landing;   -- arquivos de entrada
+CREATE VOLUME  IF NOT EXISTS novarota.bronze.landing;   ,
 ```
+
+### O que esperar (evidências)
+- `gold_fato_transacao` = **10** linhas;
+- clientes/contas/cartões com **múltiplas versões** (SCD2);
+- estorno **total** (T0003) → `valor_liquido = 0`; estorno **parcial** (T0021)
+  → `valor_liquido = 2800`; cartão **cancelado** (T0022) fora das métricas
+  mensais, mas preservado no fato;
+- **idempotência**: rodar de novo sem novos arquivos loga `nada_novo` e o fato
+  continua com 10 linhas.
 
 ---
 
-## 3. CI/CD: execução automática no Databricks
+## 2. CI/CD: execução automática no Databricks
 
 Dois workflows do **GitHub Actions**:
 
@@ -166,3 +115,22 @@ Fluxo automático resumido:
 push na main → GitHub Actions → bundle validate → deploy → run
             → Job Serverless: Bronze → Prata → Ouro → analytics SQL
 ```
+
+---
+
+## 3. Desenvolvimento e testes
+
+As **regras de negócio, qualidade e SCD2** ficam no pacote `src/novarota` e são
+cobertas por testes automatizados (rodam no CI, sem cluster):
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate            
+pip install -r requirements.txt
+pytest -q                           
+ruff check src tests conftest.py     
+```
+
+As fixtures de teste sobem um Spark local com Delta apenas para exercitar a
+lógica das transformações com massa pequena — não é o caminho de execução do
+produto, que roda no Databricks.

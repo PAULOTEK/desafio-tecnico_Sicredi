@@ -31,7 +31,7 @@ logger = obter_logger("novarota.ouro")
 
 
 def _garantir_schema(spark: SparkSession, config: Config) -> None:
-    spark.sql(f"CREATE DATABASE IF NOT EXISTS {config.schema_ouro}")
+    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {config.schema_qualificado(config.schema_ouro)}")
 
 
 def _salvar(df: DataFrame, tabela: str) -> None:

@@ -33,7 +33,7 @@ logger = obter_logger("novarota.prata")
 # Helpers
 # --------------------------------------------------------------------------- #
 def _garantir_schema(spark: SparkSession, config: Config) -> None:
-    spark.sql(f"CREATE DATABASE IF NOT EXISTS {config.schema_prata}")
+    spark.sql(f"CREATE SCHEMA IF NOT EXISTS {config.schema_qualificado(config.schema_prata)}")
 
 
 def _sem_metadados_bronze(df: DataFrame) -> DataFrame:
@@ -70,10 +70,12 @@ def _upsert_por_chave(
 ) -> None:
     """MERGE idempotente por chave (usado nas tabelas nao-SCD2)."""
 
-    if not spark.catalog.tableExists(tabela):
+    # Evita spark.catalog.tableExists() (nao suportado no Serverless).
+    try:
+        alvo = DeltaTable.forName(spark, tabela)
+    except Exception:  # noqa: BLE001 - tabela ainda nao existe
         df.write.format("delta").mode("overwrite").saveAsTable(tabela)
         return
-    alvo = DeltaTable.forName(spark, tabela)
     (
         alvo.alias("d")
         .merge(df.alias("o"), f"d.{chave} = o.{chave}")

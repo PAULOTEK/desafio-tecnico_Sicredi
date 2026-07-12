@@ -1,4 +1,15 @@
 """Regras de qualidade de dados e segregacao em quarentena.
+
+Cada entidade possui um conjunto de regras (``RegraQualidade``). Uma regra e
+uma expressao booleana que deve ser **verdadeira** para o registro ser
+considerado valido. Registros que violam qualquer regra sao segregados em uma
+tabela de quarentena, com a coluna ``motivo_quarentena`` listando todas as
+regras violadas (facilita a analise e o reprocessamento posterior).
+
+As validacoes puramente estruturais (formato de cpf, dominio de status, sinal
+de valor) ficam aqui. Validacoes de integridade referencial entre entidades
+(ex.: cartao sem conta) sao aplicadas na camada Prata, quando as dimensoes ja
+estao disponiveis.
 """
 
 from __future__ import annotations

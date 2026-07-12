@@ -2,11 +2,9 @@
 # MAGIC %md
 # MAGIC # Bronze
 # MAGIC
-# MAGIC  ingestão dos arquivos da `landing` para tabelas Delta **de forma
-# MAGIC incremental e idempotente**, preservando o dado bruto e anexando metadados
-# MAGIC técnicos. A lógica de verdade mora no pacote `novarota.ingestao.bronze`
-# MAGIC (testável); neste notebook eu **executo e mostro** cada etapa acontecendo.
-# MAGIC
+# MAGIC Aqui eu ingiro os arquivos da `landing` (Volume) para tabelas Delta
+# MAGIC gerenciadas no Unity Catalog, **de forma incremental e idempotente**,
+# MAGIC preservando o dado bruto e anexando metadados técnicos. A lógica  fica na class no pacote `src.ingestao.bronze`
 # MAGIC Pré-requisito: ter rodado o `00_setup_e_massa`.
 
 # COMMAND ----------
@@ -21,47 +19,28 @@ except Exception:  # noqa: BLE001
     _raiz = ""
 
 if not _raiz:
-    try:
-        _ctx = dbutils.notebook.entry_point.getDbutils().notebook().getContext()  # noqa: F821
-        _nb = _ctx.notebookPath().get()
-        _raiz = "/Workspace" + _nb.rsplit("/notebooks/", 1)[0]
-    except Exception:  # noqa: BLE001
-        _raiz = ""
+    _ctx = dbutils.notebook.entry_point.getDbutils().notebook().getContext()  # noqa: F821
+    _nb = _ctx.notebookPath().get()
+    _raiz = "/Workspace" + _nb.rsplit("/notebooks/", 1)[0]
 
-if _raiz and f"{_raiz}/src" not in sys.path:
+if f"{_raiz}/src" not in sys.path:
     sys.path.insert(0, f"{_raiz}/src")
 
 # COMMAND ----------
 
-from novarota.common.ambiente import preparar_unity_catalog
-from novarota.common.spark import obter_spark
-from novarota.config import Config
-from novarota.ingestao.bronze import (
+from src.common.ambiente import preparar_unity_catalog
+from src.config import Config
+from src.ingestao.bronze import (
     FONTES_PADRAO,
     executar_bronze,
     ingerir_fonte,
 )
 
-# display() existe no Databricks.
-# eu troco por show() para o notebook rodar igual no ambiente local.
-try:
-    display  # noqa: F821
-except NameError:
-    def display(df, n: int = 20):
-        df.show(n, truncate=False)
-
 # COMMAND ----------
 
 config = Config.carregar()
 config.modo_execucao = "full"
-spark = obter_spark("novarota-bronze", config)
-
-# No Databricks liga o Unity Catalog e aponta o landing para o Volume.
-try:
-    dbutils  # noqa: F821
-    preparar_unity_catalog(spark, config)
-except NameError:
-    pass
+preparar_unity_catalog(spark, config)  # noqa: F821
 
 # COMMAND ----------
 
@@ -91,7 +70,7 @@ for fonte in FONTES_PADRAO:
 
 # COMMAND ----------
 
-linhas = ingerir_fonte(spark, config, FONTES_PADRAO[3])  # transacoes
+linhas = ingerir_fonte(spark, config, FONTES_PADRAO[3])  #  (transacoes)
 print("linhas ingeridas de transacoes nesta execução:", linhas)
 display(spark.table(config.tabela(config.schema_bronze, "transacoes")))
 
@@ -131,7 +110,7 @@ display(spark.table(config.tabela(config.schema_bronze, "_controle_ingestao")))
 
 # COMMAND ----------
 
-resumo2 = executar_bronze(spark, config)
+resumo2 = executar_bronze(spark, config)  # noqa: F821
 print("Reexecução (esperado tudo 0):", resumo2)
 assert all(v == 0 for v in resumo2.values()), "idempotência violada: reingeriu algo!"
 print("OK — reexecução não ingeriu nada novo.")

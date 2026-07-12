@@ -1,4 +1,8 @@
-"""Configuracao de logs estruturados por etapa do pipeline..
+"""Configuracao de logs estruturados por etapa do pipeline.
+
+Optamos por logs em formato ``chave=valor`` (facilmente parseavel por
+ferramentas de observabilidade) com um prefixo de etapa, para que cada job
+do pipeline registre inicio, metricas e fim de forma consistente.
 """
 
 from __future__ import annotations

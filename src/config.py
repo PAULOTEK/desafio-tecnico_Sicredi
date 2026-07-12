@@ -3,6 +3,15 @@
 Toda a parametrizacao (catalogo, schemas, caminhos, datas, modo de execucao e
 batch_id) fica concentrada aqui, evitando valores hardcoded espalhados pelo
 codigo. Os valores podem vir de tres fontes, em ordem crescente de prioridade:
+
+1. valores padrao definidos neste modulo;
+2. arquivo YAML (``config/config.yaml`` por padrao);
+3. variaveis de ambiente prefixadas com ``NOVAROTA_``.
+
+Exemplo::
+
+    export NOVAROTA_MODO_EXECUCAO=incremental
+    export NOVAROTA_DATA_REFERENCIA=2024-03-01
 """
 
 from __future__ import annotations
@@ -32,11 +41,16 @@ class Config:
     schema_prata: str = "prata"
     schema_ouro: str = "ouro"
 
-    # Caminhos do lakehouse. Em Databricks apontariam para volumes/DBFS/ADLS.
-    dir_dados: Path = RAIZ_PROJETO / "data"
-    dir_landing: Path = RAIZ_PROJETO / "data" / "landing"
-    dir_lakehouse: Path = RAIZ_PROJETO / "data" / "lakehouse"
-    dir_warehouse: Path = RAIZ_PROJETO / "data" / "spark-warehouse"
+    # Quando True, os nomes das tabelas sao qualificados com o catalogo
+    # (``catalogo.schema.tabela``) — modo Unity Catalog no Databricks. Quando
+    # False (padrao), usamos ``schema.tabela``, pois o metastore local do Spark
+    # (execucao fora do Databricks) nao suporta catalogos de tres niveis.
+    usar_catalogo: bool = False
+
+    # Volume de entrada (landing) no Unity Catalog. O notebook de setup cria o
+    # Volume e aponta este caminho para ele (ver common/ambiente.py). Caminhos
+    # absolutos (inclusive /Volumes) sao respeitados como estao (ver _normalizar).
+    dir_landing: Path = Path("/Volumes/novarota/bronze/landing")
 
     # Controle de carga.
     modo_execucao: str = "full"  # full | incremental
@@ -82,12 +96,16 @@ class Config:
         # que os jobs funcionem independentemente do diretorio de execucao.
         def _resolver(valor: Path | str) -> Path:
             caminho = Path(valor)
-            return caminho if caminho.is_absolute() else RAIZ_PROJETO / caminho
 
-        self.dir_dados = _resolver(self.dir_dados)
+            if str(caminho).startswith("/Volumes"):
+                return caminho
+
+            if caminho.is_absolute():
+                return caminho
+
+            return RAIZ_PROJETO / caminho
+
         self.dir_landing = _resolver(self.dir_landing)
-        self.dir_lakehouse = _resolver(self.dir_lakehouse)
-        self.dir_warehouse = _resolver(self.dir_warehouse)
 
         if isinstance(self.data_referencia, str):
             self.data_referencia = date.fromisoformat(self.data_referencia)
@@ -96,6 +114,13 @@ class Config:
 
         self.modo_execucao = str(self.modo_execucao).lower().strip()
         self.batch_id = str(self.batch_id)
+
+        if isinstance(self.usar_catalogo, str):
+            self.usar_catalogo = self.usar_catalogo.strip().lower() in {
+                "1", "true", "yes", "sim", "y", "s"
+            }
+        else:
+            self.usar_catalogo = bool(self.usar_catalogo)
 
     def _validar(self) -> None:
         if self.modo_execucao not in MODOS_EXECUCAO_VALIDOS:
@@ -107,15 +132,24 @@ class Config:
     # ------------------------------------------------------------------ #
     # Utilitarios
     # ------------------------------------------------------------------ #
-    def tabela(self, schema: str, nome: str) -> str:
-        """Retorna o nome totalmente qualificado ``schema.tabela``.
+    def schema_qualificado(self, schema: str) -> str:
+        """Retorna o schema qualificado conforme o ambiente.
 
-        Usamos ``schema.tabela`` (sem o catalogo) porque o metastore local do
-        Spark nao suporta catalogos de tres niveis. Em Databricks/Unity Catalog
-        bastaria prefixar com ``{self.catalogo}.``.
+        No Databricks/Unity Catalog (``usar_catalogo=True``) inclui o catalogo
+        (``catalogo.schema``); localmente retorna apenas ``schema``.
         """
 
-        return f"{schema}.{nome}"
+        return f"{self.catalogo}.{schema}" if self.usar_catalogo else schema
+
+    def tabela(self, schema: str, nome: str) -> str:
+        """Retorna o nome totalmente qualificado da tabela.
+
+        No Databricks/Unity Catalog (``usar_catalogo=True``) usamos tres niveis
+        (``catalogo.schema.tabela``). Localmente usamos ``schema.tabela``,
+        porque o metastore local do Spark nao suporta catalogos de tres niveis.
+        """
+
+        return f"{self.schema_qualificado(schema)}.{nome}"
 
     def novo_batch_id(self) -> str:
         """Gera um batch_id unico caso seja necessario isolar reprocessos."""

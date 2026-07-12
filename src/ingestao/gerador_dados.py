@@ -1,6 +1,18 @@
 """Gerador de massa sintetica da Cooperativa NovaRota.
 
-Cria arquivos de entrada
+Cria arquivos de entrada que simulam um cenario CDC realista, com os problemas
+de qualidade exigidos pelo desafio:
+
+* atualizacoes cadastrais e versoes historicas (operacao I/U/D);
+* registros duplicados e ``id_transacao`` repetido entre cargas;
+* dados invalidos (cpf malformado, renda negativa, valores zerados);
+* integridade referencial quebrada (cartao sem conta, evento/estorno orfao);
+* dados atrasados (transacao de data anterior chegando em carga posterior);
+* evolucao de schema (coluna nova ``dispositivo`` na segunda carga);
+* arquivos que chegam fora de ordem (particoes de data intercaladas).
+
+Os dados sao divididos em duas cargas (``carga=1`` e ``carga=2``) para
+exercitar a ingestao incremental e o MERGE idempotente.
 """
 
 from __future__ import annotations
