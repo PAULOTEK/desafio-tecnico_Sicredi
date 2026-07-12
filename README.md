@@ -93,10 +93,10 @@ workspace corporativo, trial ou **Free Edition**.
      `input_file_name()`, não suportado no Spark Connect/Serverless).
 4. **Validar / evidências** — os prints destas células comprovam a execução:
    ```sql
-   SELECT count(*) FROM novarota.ouro.gold_fato_transacao;                 -- 10
-   SELECT id_cliente, count(*) FROM novarota.prata.clientes GROUP BY 1;    -- versões SCD2
+   SELECT count(*) FROM novarota.ouro.gold_fato_transacao;                 
+   SELECT id_cliente, count(*) FROM novarota.prata.clientes GROUP BY 1;    
    SELECT id_transacao, valor, valor_liquido, flag_cartao_cancelado
-   FROM   novarota.ouro.gold_fato_transacao ORDER BY id_transacao;         -- T0003=0, T0021=2800, T0022 cancelado
+   FROM   novarota.ouro.gold_fato_transacao ORDER BY id_transacao;
    ```
 
 > **Guia completo passo a passo** (Databricks Serverless e CI/CD):
