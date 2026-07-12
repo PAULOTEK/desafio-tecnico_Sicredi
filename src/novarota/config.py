@@ -47,14 +47,10 @@ class Config:
     # (execucao fora do Databricks) nao suporta catalogos de tres niveis.
     usar_catalogo: bool = False
 
-    # Caminhos do lakehouse (padrao local). Em Databricks o notebook aponta o
-    # landing para um Volume (ex.: /Volumes/novarota/bronze/landing) e as tabelas
-    # sao gerenciadas pelo Unity Catalog. Caminhos absolutos (inclusive /Volumes)
-    # passados via YAML/env sao respeitados como estao (ver _normalizar).
-    dir_dados: Path = RAIZ_PROJETO / "data"
-    dir_landing: Path = RAIZ_PROJETO / "data" / "landing"
-    dir_lakehouse: Path = RAIZ_PROJETO / "data" / "lakehouse"
-    dir_warehouse: Path = RAIZ_PROJETO / "data" / "spark-warehouse"
+    # Volume de entrada (landing) no Unity Catalog. O notebook de setup cria o
+    # Volume e aponta este caminho para ele (ver common/ambiente.py). Caminhos
+    # absolutos (inclusive /Volumes) sao respeitados como estao (ver _normalizar).
+    dir_landing: Path = Path("/Volumes/novarota/bronze/landing")
 
     # Controle de carga.
     modo_execucao: str = "full"  # full | incremental
@@ -109,10 +105,7 @@ class Config:
 
             return RAIZ_PROJETO / caminho
 
-        self.dir_dados = _resolver(self.dir_dados)
         self.dir_landing = _resolver(self.dir_landing)
-        self.dir_lakehouse = _resolver(self.dir_lakehouse)
-        self.dir_warehouse = _resolver(self.dir_warehouse)
 
         if isinstance(self.data_referencia, str):
             self.data_referencia = date.fromisoformat(self.data_referencia)

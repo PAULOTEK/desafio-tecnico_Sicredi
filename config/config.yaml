@@ -1,6 +1,5 @@
-# Configuracao do pipeline NovaRota.
-# Valores podem ser sobrescritos por variaveis de ambiente NOVAROTA_* ou por
-# argumentos de linha de comando dos jobs (--modo, --data-referencia, etc.).
+# Configuracao do pipeline NovaRota (Databricks / Unity Catalog).
+# Valores podem ser sobrescritos por variaveis de ambiente NOVAROTA_*.
 
 catalogo: novarota
 schema_bronze: bronze
@@ -8,14 +7,11 @@ schema_prata: prata
 schema_ouro: ouro
 
 # Qualifica as tabelas com o catalogo (catalogo.schema.tabela) no Unity Catalog.
-# Local (metastore Spark) nao suporta 3 niveis, entao o padrao e false.
-# No Databricks o notebook liga isso automaticamente (config.usar_catalogo=True).
+# O notebook de setup liga isso automaticamente (config.usar_catalogo=True) ao
+# chamar preparar_unity_catalog. Mantido aqui para referencia/parametrizacao.
 usar_catalogo: false
 
-# Caminhos relativos a raiz do projeto (ajustar para volumes/DBFS em Databricks).
-dir_dados: data
-dir_landing: data/landing
-dir_lakehouse: data/lakehouse
-dir_warehouse: data/spark-warehouse
+# Volume de entrada. O setup (common/ambiente.py) cria e aponta para este caminho.
+dir_landing: /Volumes/novarota/bronze/landing
 
 modo_execucao: full  # full | incremental

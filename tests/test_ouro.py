@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from novarota.transformacao.ouro import (
+from src.novarota.transformacao.ouro import (
     construir_cliente_mes,
     construir_indicadores_risco,
 )

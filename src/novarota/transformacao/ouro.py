@@ -1,5 +1,17 @@
 """Camada Ouro: fato, dimensoes e visoes analiticas.
 
+Modelagem (grao e chaves documentados em docs/arquitetura.md):
+
+* ``gold_fato_transacao`` — grao: 1 linha por transacao valida. Enriquecida com
+  os atributos cadastrais **vigentes na data da transacao** (SCD2), com o valor
+  liquido (descontando estornos) e flags de risco.
+* ``gold_dim_cliente`` / ``gold_dim_conta`` / ``gold_dim_cartao`` — visao vigente.
+* ``gold_dim_estabelecimento`` — estabelecimento + mcc distintos.
+* ``gold_cliente_mes`` — grao: cliente x ano_mes. Metricas comportamentais.
+* ``gold_indicadores_risco`` — grao: cliente x ano_mes. Eventos, estornos e
+  chargebacks.
+* ``gold_features_cliente`` — grao: 1 linha por cliente vigente. Consumo por DS.
+
 Regras de negocio aplicadas:
 * transacoes em cartoes **cancelados na data** nao compoem metricas futuras
   (``flag_cartao_cancelado``), mas permanecem no fato para preservar historico;

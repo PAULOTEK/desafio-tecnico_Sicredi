@@ -13,8 +13,8 @@ decisões técnicas.
 
 - [Arquitetura](#arquitetura)
 - [Modelo de dados](#modelo-de-dados)
-- [Estrutura do projeto](#estrutura-do-projeto)
-- [Setup](#setup)
+- [Stack](#stack)
+- [Executando no Databricks](#executando-no-databricks)
 - [Execução ponta a ponta](#execução-ponta-a-ponta)
 - [Consultas SQL](#consultas-sql-avançadas)
 - [Testes e lint](#testes-e-lint)
@@ -26,100 +26,94 @@ decisões técnicas.
 
 ## Arquitetura
 
-![Captura de tela 2026-07-11 094009.png](docs/diagramas/Captura%20de%20tela%202026-07-11%20094009.png)
+![img.png](docs/diagramas/img.png)
 
 ## Modelo de dados
 ![modelagem_do_dado.png](docs/diagramas/modelagem_do_dado.png)
+
 ## Stack
 
-| Camada | Tecnologia                   |
-|---|------------------------------|
-| Processamento | Apache Spark 3.5 (PySpark)   |
-| Formato / ACID | Delta Lake 3.2               |
-| Linguagem | Python 3.10 ou superior      |
+| Camada | Tecnologia |
+|---|---|
+| Plataforma | Databricks Serverless + Unity Catalog |
+| Processamento | Apache Spark 3.5 (PySpark) |
+| Formato / ACID | Delta Lake 3.2 |
+| Linguagem | Python 3.10+ |
 | Configuração | YAML + variáveis de ambiente |
-| Testes / Lint | pytest, ruff                 |
-| CI | GitHub Actions               |
+| Testes / Lint | pytest, ruff |
+| CI/CD | GitHub Actions + Databricks Asset Bundle |
 
 ## Estrutura do projeto
 
 ```
 desafio-engenharia-dados2/
-├── config/config.yaml            # parametrização (catálogo, schemas, paths, modo)
+├── config/config.yaml            # parametrização (catálogo, schemas, landing, modo)
+├── databricks.yml                # Databricks Asset Bundle (Job Serverless)
 ├── docs/                         # arquitetura + decisões técnicas + diagramas
 ├── evidencias/                   # logs/saídas reais de execução
-├── notebooks/                    # camada de execução/demonstração (Databricks)
+├── notebooks/                    # camada de execução/demonstração (um por camada)
 ├── sql/
 │   ├── ddl/                      # criação de schemas
 │   └── analytics/                # SQL avançado (CTEs, window functions, MERGE)
 ├── src/novarota/
 │   ├── config.py                 # configuração parametrizável
-│   ├── common/                   # spark, logging, metadados
+│   ├── common/                   # ambiente (Unity Catalog), logging, metadados
 │   ├── ingestao/                 # gerador de massa + camada Bronze
 │   ├── qualidade/                # regras de qualidade + quarentena
-│   ├── transformacao/            # SCD2, camada Prata, camada Ouro
-│   └── jobs/                     # entrypoints (bronze/prata/ouro/pipeline/analytics)
+│   └── transformacao/            # SCD2, camada Prata, camada Ouro
 ├── tests/                        # testes unitários e de transformação
 ├── requirements.txt / pyproject.toml
-└── .github/workflows/ci.yml      # lint + testes
+└── .github/workflows/            # CI (lint+testes) + CD (pipeline no Databricks)
 ```
 
-## Pré-requisitos
 
-- Python 3.10 ou superior
+## Executando no Databricks
 
-## Setup
+Ambiente-alvo: **Serverless + Unity Catalog** (também roda em cluster **DBR 15.x
+LTS**).Serve em
+workspace corporativo, trial ou **Free Edition**.
 
-```bash
-# 1. Criar e ativar o ambiente virtual
-python3 -m venv .venv
-source .venv/bin/activate            # Windows: .venv\Scripts\activate
+1. **Compute**: **Serverless** ou cluster **DBR 15.x LTS** (Spark 3.5 + Delta).
+2. **Código**: Workspace → **Repos** → *Add Repo* → cole a URL deste repositório
+   (ou **Git → Pull** se já clonou).
+3. **Executar**: rode os notebooks **na ordem**, um por camada. Cada um localiza
+   o pacote `novarota` sozinho (adiciona `src` ao `sys.path`, sem `%pip`) e
+   prepara o Unity Catalog:
+   `00_setup_e_massa` → `01_bronze` → `02_prata` → `03_ouro` → `04_analytics_sql`.
 
-# 2. Instalar dependências e o pacote (modo editável)
-pip install -r requirements.txt
-pip install -e .
-```
-## Execução ponta a ponta
+   **Detalhes de compatibilidade com Serverless/UC:**
+   - Usa o `spark` **nativo** do notebook; nunca cria sessão manual nem acessa
+     `sparkContext`/`_jvm` (indisponíveis no Serverless/Spark Connect).
+   - Tabelas **gerenciadas pelo Unity Catalog** (`saveAsTable`). Sem *external
+     location*; o único Volume é o `landing`, só para os arquivos de entrada.
+   - `preparar_unity_catalog` liga `config.usar_catalogo = True`, então as
+     tabelas ficam totalmente qualificadas (`novarota.bronze.clientes`, …).
+   - O `arquivo_origem` da Bronze usa `_metadata.file_path` (e não
+     `input_file_name()`, não suportado no Spark Connect/Serverless).
+4. **Validar / evidências** — os prints destas células comprovam a execução:
+   ```sql
+   SELECT count(*) FROM novarota.ouro.gold_fato_transacao;                 -- 10
+   SELECT id_cliente, count(*) FROM novarota.prata.clientes GROUP BY 1;    -- versões SCD2
+   SELECT id_transacao, valor, valor_liquido, flag_cartao_cancelado
+   FROM   novarota.ouro.gold_fato_transacao ORDER BY id_transacao;         -- T0003=0, T0021=2800, T0022 cancelado
+   ```
 
-Forma mais simples — pipeline completo com geração da massa sintética:
+> **Guia completo passo a passo** (Databricks Serverless e CI/CD):
+> [`docs/como-rodar.md`](docs/como-rodar.md).
 
-```bash
-python -m novarota.jobs.pipeline --gerar-dados --modo full
-```
-
-Ou camada por camada (útil para depurar / agendar separadamente):
-
-```bash
-python -m novarota.jobs.gerar_dados_job          # gera a massa em data/landing
-python -m novarota.jobs.bronze_job --modo full   # ingestão Bronze (Delta)
-python -m novarota.jobs.prata_job                # limpeza, qualidade, SCD2
-python -m novarota.jobs.ouro_job                 # fato, dimensões, features
-```
-
-Parâmetros disponíveis em todos os jobs (sobrescrevem `config/config.yaml`):
-
-| Parâmetro | Descrição |
-|---|---|
-| `--config` | Caminho de um YAML alternativo |
-| `--modo` | `full` ou `incremental` |
-| `--data-referencia` | Data de referência (`YYYY-MM-DD`) |
-| `--batch-id` | Identificador do batch |
-
-Parametrização por ambiente,exemplo:
+Parametrização (sobrescreve `config/config.yaml`) por variáveis de ambiente
+`NOVAROTA_*`, por exemplo:
 
 ```bash
 export NOVAROTA_MODO_EXECUCAO=incremental
-export NOVAROTA_SCHEMA_OURO=ouro
+export NOVAROTA_DATA_REFERENCIA=2024-03-01
 ```
 
 ## Consultas SQL avançadas
 
-```bash
-python -m novarota.jobs.analytics_job
-```
-
-Executa e exibe o resultado de todas as consultas em
-[`sql/analytics/`](sql/analytics), cobrindo os requisitos obrigatórios:
+O notebook `notebooks/04_analytics_sql.py` executa as consultas; os arquivos-fonte
+ficam em [`sql/analytics/`](sql/analytics) e podem ser rodados no editor SQL do
+Databricks. Cobrem os requisitos obrigatórios:
 
 | Arquivo | Técnica |
 |---|---|
@@ -133,52 +127,6 @@ Executa e exibe o resultado de todas as consultas em
 
 Todas usam **CTEs encadeadas**. Há também `MERGE` em PySpark/Delta na
 historização SCD2 (`src/novarota/transformacao/scd2.py`).
-
-## Executando no Databricks
-
-A lógica é PySpark + Delta puro, então roda no Databricks **sem alterar o
-código**. Funciona em cluster clássico **e em Serverless** — usamos o `spark`
-nativo do notebook (no Serverless não há acesso a `sparkContext`) e o Unity
-Catalog com Volumes. Serve em workspace corporativo, trial ou **Free Edition**.
-
-1. **Compute**: **Serverless** ou um cluster **DBR 15.x LTS** (Spark 3.5 + Delta
-   nativos). Não é preciso instalar Spark/Delta.
-2. **Código**: Workspace → **Repos** → *Add Repo* → cole a URL deste
-   repositório.
-3. **Executar**: rode os notebooks **na ordem**, um por camada — cada um localiza
-   o pacote sozinho (sem `%pip`) e, no Databricks, prepara o Unity Catalog:
-   `00_setup_e_massa` → `01_bronze` → `02_prata` → `03_ouro` → `04_analytics_sql`.
-
-> **Guia completo** (local, Databricks Serverless e CI/CD):
-> [`docs/como-rodar.md`](docs/como-rodar.md).
-
-   **Detalhes de compatibilidade com Serverless/UC:**
-   - As tabelas são **gerenciadas pelo Unity Catalog** (`saveAsTable`). Não use
-     *external location*; o único Volume necessário é o `landing`, apenas para
-     os arquivos de entrada.
-   - No Databricks o notebook liga `config.usar_catalogo = True`, então as
-     tabelas ficam totalmente qualificadas (`novarota.bronze.clientes`, …);
-     localmente o padrão é `False` (`schema.tabela`, pois o metastore local não
-     tem catálogo de 3 níveis).
-   - O `arquivo_origem` da Bronze usa `_metadata.file_path` (e não
-     `input_file_name()`, que não é suportado no Spark Connect/Serverless).
-4. **Validar / evidências** — os prints destas células comprovam a execução:
-   ```sql
-   SELECT count(*) FROM novarota.ouro.gold_fato_transacao;                 
-   SELECT id_cliente, count(*) FROM novarota.prata.clientes GROUP BY 1;    
-   SELECT id_transacao, valor, valor_liquido, flag_cartao_cancelado
-   FROM   novarota.ouro.gold_fato_transacao ORDER BY id_transacao;       
-   ```
-
-## Testes e lint
-
-```bash
-pytest -q                                  
-ruff check src tests conftest.py           
-```
-
-Os testes cobrem regras de qualidade/quarentena, metadados/hash, construção do
-SCD2 (vigências, delete, dedup, surrogate key) e agregações da camada Ouro.
 
 ## CI/CD (GitHub Actions)
 
@@ -199,11 +147,29 @@ variables → Actions** do repositório:
 | `DATABRICKS_HOST` | URL do workspace (ex.: `https://dbc-xxxx.cloud.databricks.com`) |
 | `DATABRICKS_TOKEN` | Personal Access Token do workspace (User Settings → Developer → Access tokens) |
 
-O Job é definido roda em **compute Serverless**. 
-Cada notebook importa o pacote `novarota` via `sys.path` a
+O Job é definido pelo Asset Bundle e roda em **compute Serverless** (nenhum
+cluster é declarado). Cada notebook importa o pacote `novarota` via `sys.path` a
 partir de `${workspace.file_path}/src` (parâmetro `bundle_root`), sem `%pip`.
-Rodar localmente (opcional): `databricks bundle deploy -t prod && databricks
-bundle run novarota_pipeline_medallion -t prod`.
+
+## Testes e lint
+
+As regras de negócio, qualidade e SCD2 ficam no pacote `src/novarota` e são
+cobertas por testes automatizados (rodam no CI, sem cluster):
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate            
+pip install -r requirements.txt
+pytest -q                          
+ruff check src tests conftest.py     
+```
+
+As fixtures sobem um Spark local com Delta apenas para exercitar a lógica das
+transformações com massa pequena — é um harness de desenvolvimento, não o
+caminho de execução do produto. Os testes cobrem regras de qualidade/quarentena,
+metadados/hash, construção do SCD2 (vigências, delete, dedup, surrogate key) e
+agregações da camada Ouro (exclusão de cartão cancelado, valor líquido,
+indicadores de risco).
 
 ## Modelo de dados (Ouro)
 
@@ -216,18 +182,20 @@ bundle run novarota_pipeline_medallion -t prod`.
 | `gold_indicadores_risco` | cliente × ano_mes | (`id_cliente`, `ano_mes`) |
 | `gold_features_cliente` | 1 linha por cliente | `id_cliente` |
 
-
+Regras de negócio: transações em **cartão cancelado na data** não compõem
+métricas futuras (mas ficam no fato); **transações estornadas não somam no valor
+líquido**; cadastro refletido é o **vigente na data da transação**.
 
 ## Idempotência e reprocessamento
 
 - **Bronze**: tabela de controle de arquivos processados → reexecutar não
   duplica dados.
-- **Prata**: `MERGE` por *surrogate key* determinística → histórico
+- **Prata (SCD2)**: `MERGE` por *surrogate key* determinística → histórico
   reconstruído de forma estável; **dados atrasados** apenas reordenam vigências.
-- **Ouro**: recomputados a partir das camadas anteriores;
+- **Prata (fatos)** e **Ouro**: recomputados a partir das camadas anteriores;
   `MERGE`/overwrite garantem estado consistente a cada run.
 
-
+Reexecutar o pipeline inteiro produz exatamente o mesmo resultado.
 
 ## Evidências de execução
 
@@ -237,13 +205,22 @@ testes/lint.
 
 ## Premissas e limitações
 
-- **Massa** gerada por código (`src/novarota/ingestao/gerador_dados.py`),
+- **Massa sintética** gerada por código (`src/novarota/ingestao/gerador_dados.py`),
   simulando os problemas de qualidade pedidos (duplicidade, CDC, dados atrasados,
   evolução de schema, integridade quebrada). Nenhum dado real, credencial ou
   token é utilizado.
 - Adicionamos o campo `valor_estorno` em `estornos` para distinguir estorno
-  parcial de total.
-- Metastore local no lugar do Unity Catalog; catálogo de três níveis
-  fica implícito.
-- A ingestão incremental usa tabela de controle no lugar do Auto Loader.
+  parcial de total (ver [decisões técnicas](docs/decisoes-tecnicas.md)).
+- A ingestão incremental usa tabela de controle no lugar do Auto Loader
+  (justificado nas decisões técnicas).
+
+
+## Sobre Reprocessamento
+
+- **Bronze**: tabela de controle de arquivos processados → reexecutar não
+  duplica dados.
+- **Prata**: `MERGE` por *surrogate key* determinística → histórico
+  reconstruído de forma estável; **dados atrasados** apenas reordenam vigências.
+- **Ouro**: recomputados a partir das camadas anteriores;
+  `MERGE`/overwrite garantem estado consistente a cada run.
 

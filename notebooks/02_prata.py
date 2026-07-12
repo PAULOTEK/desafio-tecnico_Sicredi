@@ -20,44 +20,28 @@ except Exception:  # noqa: BLE001
     _raiz = ""
 
 if not _raiz:
-    try:
-        _ctx = dbutils.notebook.entry_point.getDbutils().notebook().getContext()  # noqa: F821
-        _nb = _ctx.notebookPath().get()
-        _raiz = "/Workspace" + _nb.rsplit("/notebooks/", 1)[0]
-    except Exception:  # noqa: BLE001
-        _raiz = ""
+    _ctx = dbutils.notebook.entry_point.getDbutils().notebook().getContext()  # noqa: F821
+    _nb = _ctx.notebookPath().get()
+    _raiz = "/Workspace" + _nb.rsplit("/notebooks/", 1)[0]
 
-if _raiz and f"{_raiz}/src" not in sys.path:
+if f"{_raiz}/src" not in sys.path:
     sys.path.insert(0, f"{_raiz}/src")
 
 # COMMAND ----------
 
 from pyspark.sql import functions as F
 
-from novarota.common.ambiente import preparar_unity_catalog
-from novarota.common.metadados import COLUNAS_METADADOS
-from novarota.common.spark import obter_spark
-from novarota.config import Config
-from novarota.qualidade.regras import aplicar_regras, regras_clientes
-from novarota.transformacao.prata import executar_prata
-
-try:
-    display  # noqa: F821
-except NameError:
-    def display(df, n: int = 20):
-        df.show(n, truncate=False)
+from src.novarota.common.ambiente import preparar_unity_catalog
+from src.novarota.common.metadados import COLUNAS_METADADOS
+from src.novarota.config import Config
+from src.novarota.qualidade.regras import aplicar_regras, regras_clientes
+from src.novarota.transformacao.prata import executar_prata
 
 # COMMAND ----------
 
 config = Config.carregar()
 config.modo_execucao = "full"
-spark = obter_spark("novarota-prata", config)
-
-try:
-    dbutils  # noqa: F821
-    preparar_unity_catalog(spark, config)
-except NameError:
-    pass
+preparar_unity_catalog(spark, config)  # noqa: F821
 
 # COMMAND ----------
 
