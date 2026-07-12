@@ -26,10 +26,11 @@ decisões técnicas.
 
 ## Arquitetura
 
-![img.png](docs/diagramas/img.png)
+![Arquitetura](https://raw.githubusercontent.com/PAULOTEK/desafio-tecnico_Sicredi/main/docs/diagramas/img.png)
 
 ## Modelo de dados
-![modelagem_do_dado.png](docs/diagramas/modelagem_do_dado.png)
+
+![Modelo de Dados](https://raw.githubusercontent.com/PAULOTEK/desafio-tecnico_Sicredi/main/docs/diagramas/modelagem_do_dado.png)
 
 ## Stack
 
