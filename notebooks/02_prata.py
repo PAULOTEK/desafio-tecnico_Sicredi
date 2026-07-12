@@ -31,11 +31,11 @@ if f"{_raiz}/src" not in sys.path:
 
 from pyspark.sql import functions as F
 
-from src.novarota.common.ambiente import preparar_unity_catalog
-from src.novarota.common.metadados import COLUNAS_METADADOS
-from src.novarota.config import Config
-from src.novarota.qualidade.regras import aplicar_regras, regras_clientes
-from src.novarota.transformacao.prata import executar_prata
+from novarota.common.ambiente import preparar_unity_catalog
+from novarota.common.metadados import COLUNAS_METADADOS
+from novarota.config import Config
+from novarota.qualidade.regras import aplicar_regras, regras_clientes
+from novarota.transformacao.prata import executar_prata
 
 # COMMAND ----------
 
