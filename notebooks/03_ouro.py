@@ -32,10 +32,9 @@ if f"{_raiz}/src" not in sys.path:
 # COMMAND ----------
 
 from pyspark.sql import functions as F
-
-from src.common.ambiente import preparar_unity_catalog
-from src.config import Config
-from src.transformacao.ouro import construir_fato_transacao, executar_ouro
+from src.novarota.common.ambiente import preparar_unity_catalog
+from src.novarota.config import Config
+from src.novarota.transformacao.ouro import construir_fato_transacao, executar_ouro
 
 # COMMAND ----------
 

@@ -21,7 +21,7 @@ import csv
 import json
 from pathlib import Path
 
-from src.common.logging_config import obter_logger
+from novarota.common.logging_config import obter_logger
 
 logger = obter_logger("novarota.gerador")
 

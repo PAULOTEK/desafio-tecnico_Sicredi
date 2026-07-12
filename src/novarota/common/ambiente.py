@@ -12,7 +12,7 @@ from pathlib import Path
 
 from pyspark.sql import SparkSession
 
-from src.config import Config
+from novarota.config import Config
 
 
 def preparar_unity_catalog(spark: SparkSession, config: Config) -> None:

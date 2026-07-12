@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 
 import pytest
-from src.config import Config
+from src.novarota.config import Config
 
 
 def test_valores_padrao():

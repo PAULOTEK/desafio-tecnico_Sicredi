@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.transformacao.scd2 import DATA_FIM_ABERTA, DefinicaoSCD2, construir_historico
+from src.novarota.transformacao.scd2 import DATA_FIM_ABERTA, DefinicaoSCD2, construir_historico
 
 DEF = DefinicaoSCD2(
     chave_negocio="id_cliente",

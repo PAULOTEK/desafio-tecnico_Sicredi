@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.common.metadados import COLUNAS_METADADOS, adicionar_metadados_bronze
+from src.novarota.common.metadados import COLUNAS_METADADOS, adicionar_metadados_bronze
 
 
 def test_adiciona_todas_as_colunas_de_metadados(spark):

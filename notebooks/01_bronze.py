@@ -28,9 +28,9 @@ if f"{_raiz}/src" not in sys.path:
 
 # COMMAND ----------
 
-from src.common.ambiente import preparar_unity_catalog
-from src.config import Config
-from src.ingestao.bronze import (
+from src.novarota.common.ambiente import preparar_unity_catalog
+from src.novarota.config import Config
+from src.novarota.ingestao.bronze import (
     FONTES_PADRAO,
     executar_bronze,
     ingerir_fonte,

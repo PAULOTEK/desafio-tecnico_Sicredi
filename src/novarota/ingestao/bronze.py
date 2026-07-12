@@ -25,9 +25,9 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import StringType, StructField, StructType, TimestampType
 
-from src.common.logging_config import obter_logger
-from src.common.metadados import adicionar_metadados_bronze
-from src.config import Config
+from novarota.common.logging_config import obter_logger
+from novarota.common.metadados import adicionar_metadados_bronze
+from novarota.config import Config
 
 logger = obter_logger("novarota.bronze")
 

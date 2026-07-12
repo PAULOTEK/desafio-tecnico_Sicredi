@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from src.qualidade import regras
-from src.qualidade.regras import aplicar_regras
+from src.novarota.qualidade import regras
+from src.novarota.qualidade.regras import aplicar_regras
 
 
 def test_clientes_segrega_cpf_e_renda_invalidos(spark):

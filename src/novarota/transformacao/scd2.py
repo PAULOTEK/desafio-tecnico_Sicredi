@@ -30,7 +30,7 @@ from delta.tables import DeltaTable
 from pyspark.sql import DataFrame, SparkSession, Window
 from pyspark.sql import functions as F
 
-from src.common.logging_config import obter_logger
+from novarota.common.logging_config import obter_logger
 
 logger = obter_logger("novarota.scd2")
 
