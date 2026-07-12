@@ -15,6 +15,7 @@ from delta.tables import DeltaTable
 from novarota.common.logging_config import obter_logger
 from novarota.common.metadados import COLUNAS_METADADOS
 from novarota.config import Config
+from novarota.qualidade import regras
 from novarota.qualidade.regras import ResultadoQualidade, aplicar_regras
 from novarota.transformacao.scd2 import (
     DefinicaoSCD2,
@@ -23,8 +24,6 @@ from novarota.transformacao.scd2 import (
 )
 from pyspark.sql import Column, DataFrame, SparkSession, Window
 from pyspark.sql import functions as F
-
-from novarota.qualidade import regras
 
 logger = obter_logger("novarota.prata")
 
