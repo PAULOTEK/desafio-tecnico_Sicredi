@@ -21,8 +21,8 @@ Regras de negocio aplicadas:
 
 from __future__ import annotations
 
-from novarota.common.logging_config import obter_logger
-from novarota.config import Config
+from src.common.logging_config import obter_logger
+from src.config import Config
 from pyspark.sql import DataFrame, SparkSession, Window
 from pyspark.sql import functions as F
 

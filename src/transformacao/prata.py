@@ -12,12 +12,12 @@ Responsabilidades:
 from __future__ import annotations
 
 from delta.tables import DeltaTable
-from novarota.common.logging_config import obter_logger
-from novarota.common.metadados import COLUNAS_METADADOS
-from novarota.config import Config
-from novarota.qualidade import regras
-from novarota.qualidade.regras import ResultadoQualidade, aplicar_regras
-from novarota.transformacao.scd2 import (
+from src.common.logging_config import obter_logger
+from src.common.metadados import COLUNAS_METADADOS
+from src.config import Config
+from src.qualidade import regras
+from src.qualidade.regras import ResultadoQualidade, aplicar_regras
+from src.transformacao.scd2 import (
     DefinicaoSCD2,
     construir_historico,
     materializar_scd2,
