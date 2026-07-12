@@ -12,6 +12,9 @@ Responsabilidades:
 from __future__ import annotations
 
 from delta.tables import DeltaTable
+from pyspark.sql import Column, DataFrame, SparkSession, Window
+from pyspark.sql import functions as F
+
 from src.common.logging_config import obter_logger
 from src.common.metadados import COLUNAS_METADADOS
 from src.config import Config
@@ -22,8 +25,6 @@ from src.transformacao.scd2 import (
     construir_historico,
     materializar_scd2,
 )
-from pyspark.sql import Column, DataFrame, SparkSession, Window
-from pyspark.sql import functions as F
 
 logger = obter_logger("novarota.prata")
 

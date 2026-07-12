@@ -21,10 +21,11 @@ Regras de negocio aplicadas:
 
 from __future__ import annotations
 
-from src.common.logging_config import obter_logger
-from src.config import Config
 from pyspark.sql import DataFrame, SparkSession, Window
 from pyspark.sql import functions as F
+
+from src.common.logging_config import obter_logger
+from src.config import Config
 
 logger = obter_logger("novarota.ouro")
 
